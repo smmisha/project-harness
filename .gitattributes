@@ -1,0 +1,2 @@
+# The release manifest hashes exact bytes; keep them unchanged on every host.
+* -text

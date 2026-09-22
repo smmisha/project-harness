@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "version": "2.0.0",
+  "status": "ready_for_review",
+  "published": false,
+  "validated_source_commit": "7170443863cba237a11a9d93926da16ef6afe915",
+  "package": {
+    "path": "release/project-harness-2.0.0.zip",
+    "sha256": "29bc2aa90723c18c217fbf3ac83220c667539b6bf4e2ab8fcc6a9bf8b3a15cdb",
+    "size_bytes": 28548,
+    "entries": 19,
+    "manifest_sha256": "a1d10d78340427fecdd34e42a72a86e74ae18f41086f721bb472d61167def2a3",
+    "verified": true,
+    "reproducible_zip_bytes": true,
+    "content_scan": "No secrets, local user paths, temporary files, or research/evaluation data found in the ZIP."
+  },
+  "license": {
+    "identifier": "MIT",
+    "copyright_holder": "socialmediamisha"
+  },
+  "deterministic_tests": {
+    "windows_11": {
+      "python": "3.14.4",
+      "tests_run": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "skip_reason": "Symlink creation requires an unavailable Windows privilege."
+    },
+    "ubuntu_wsl2": {
+      "python": "3.14.4",
+      "tests_run": 83,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "required_probes": [
+        "atomic_replace",
+        "lock",
+        "unicode_path",
+        "path_traversal",
+        "symlink"
+      ],
+      "evidence": "release/ubuntu-validation-2.0.0.json",
+      "evidence_sha256": "f0ab1fe5441eeb296b4b0a47933904e6dd6f891e1a906ab171a0bfed6c1204fc"
+    }
+  },
+  "behavioral_evidence": {
+    "source": "Earlier beta snapshots, not a new 2.0.0 behavioral run.",
+    "confirmatory_paired_result": "No candidate benefit established; amended scores: baseline 18/18, candidate 17/18.",
+    "known_limitation": "Natural discovery did not invoke the Skill in 3/3 positive cases."
+  },
+  "unverified": [
+    "Native Linux and macOS execution",
+    "Behavioral superiority of Project Harness over baseline",
+    "Automatic Skill discovery in natural user prompts"
+  ]
+}
