@@ -4,7 +4,7 @@ Read this reference for multi-session work, durable coordination across executor
 
 ## Project-local records
 
-Managed work uses `.harness/state.json` for current obligations and `.harness/events.jsonl` for history. Evidence belongs under `.harness/evidence/` or in an authorized protected system. Project facts never belong in the installed Skill directory.
+Managed work uses `.harness/state.json` for current obligations and `.harness/events.jsonl` for the event log. Each successful helper `apply` also preserves the previous full state under `.harness/history/state-rev-<revision>.json`, so a removed or revised requirement can be inspected by content. Preserve these snapshots with the project; do not treat an event label as a reconstructable state. Evidence belongs under `.harness/evidence/` or in an authorized protected system. Project facts never belong in the installed Skill directory.
 
 The current record includes the stage, active scope, active requirements and decisions, active tasks, current checks, open operations, active source dependencies, risks, permissions, blockers, and one next action. Detailed SPEC, architecture, roadmap, and logs remain separate files referenced from state.
 
@@ -34,4 +34,4 @@ If the effect cannot be established safely, stop that branch and return a contin
 
 ## Helper boundary
 
-The helper validates record shape, explicit dependencies, hashes, revisions, and release gates. It does not inspect a remote provider, terminate processes, retry an operation, prove evidence truth, or authorize release.
+The helper validates record shape, explicit dependencies, hashes, revisions, and release gates. `release-check` requires final verification or handover stage, an explicit release-ready result, at least one active required requirement, and current passed coverage. It does not inspect a remote provider, terminate processes, retry an operation, prove evidence truth, or authorize release.

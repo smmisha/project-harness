@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "version": "2.0.2",
+  "status": "validated_for_review",
+  "validated_source_commit": "0dd4cf3",
+  "package": {
+    "path": "release/project-harness-2.0.2.zip",
+    "sha256": "aa0d4aff97000c92a08652f19bc4ede1a267301b18db8f92bc400a83aa36775e",
+    "size_bytes": 29595,
+    "entries": 19,
+    "manifest_sha256": "0124869b1ba77c0f823ed05e7ac7fbcf89a870ea83363b60322b3cf9b26075cf"
+  },
+  "deterministic_tests": {
+    "development_suite": {
+      "command": "python -m unittest discover -s tests -q",
+      "windows_11": {
+        "tests_run": 88,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "ubuntu_wsl2": {
+        "tests_run": 88,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "ubuntu_evidence": "release/ubuntu-validation-2.0.2.json",
+      "ubuntu_evidence_sha256": "d490e5c9d3d03a819b30d679b8de310e50203c0e4d7d624151b8e9c9b8a85f12",
+      "availability": "The 88-test development suite and historical fixtures are not included in the public source snapshot."
+    },
+    "public_package_suite": {
+      "source": "tests/test_release_package.py",
+      "command": "python -m unittest discover -s tests -v",
+      "tests_run": 6,
+      "scope": "Package integrity, report identity, packaged helper smoke, and three reproduced helper regressions."
+    }
+  },
+  "behavioral_evidence": "No new model-behavior evaluation for 2.0.2. Earlier beta-snapshot paired results did not establish a benefit over baseline.",
+  "unverified": [
+    "Native Linux",
+    "macOS",
+    "Full Claude Code 2.0.2 behavior",
+    "Other Agent Skills hosts"
+  ]
+}

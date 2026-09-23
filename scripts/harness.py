@@ -204,7 +204,7 @@ def validate_state(state: object) -> list[str]:
         issues.append("skill_version must be a non-empty string")
     if not isinstance(state.get("project_id"), str) or not state["project_id"].startswith("PROJECT-"):
         issues.append("project_id must start with PROJECT-")
-    if not isinstance(state.get("revision"), int) or state["revision"] < 0:
+    if type(state.get("revision")) is not int or state["revision"] < 0:
         issues.append("revision must be a non-negative integer")
     if not _is_datetime(state.get("updated_at")):
         issues.append("updated_at must be timezone-aware ISO 8601")
@@ -214,6 +214,13 @@ def validate_state(state: object) -> list[str]:
         issues.append(f"unsupported stage: {state.get('stage')}")
     if state.get("result_status") not in RESULT_STATUSES:
         issues.append(f"unsupported result_status: {state.get('result_status')}")
+    capabilities = state.get("capabilities")
+    if not isinstance(capabilities, dict) or any(
+        not isinstance(key, str) or not isinstance(value, str)
+        or value not in {"unknown", "available", "unavailable"}
+        for key, value in capabilities.items()
+    ):
+        issues.append("capabilities must be an object of availability values")
 
     active_ids: set[str] = set()
     collection_ids: dict[str, set[str]] = {}
@@ -263,6 +270,13 @@ def validate_state(state: object) -> list[str]:
     scope = state.get("scope")
     if not isinstance(scope, dict) or not isinstance(scope.get("outcome"), str):
         issues.append("scope.outcome must be a string")
+    elif set(scope) != {"outcome", "exclusions", "artifact_refs"} or any(
+        not isinstance(scope.get(field), list)
+        or any(not isinstance(item, str) or (field == "artifact_refs" and not item) for item in scope[field])
+        or len(scope[field]) != len(set(scope[field]))
+        for field in ("exclusions", "artifact_refs")
+    ):
+        issues.append("scope must contain unique string exclusions and artifact_refs")
     if not isinstance(state.get("next_action"), str):
         issues.append("next_action must be a string")
     return sorted(set(issues))
@@ -389,11 +403,17 @@ def release_issues(state: dict[str, Any], root: Path | None = None) -> list[str]
     issues = validate_state(state)
     if issues:
         return [f"state invalid: {issue}" for issue in issues]
+    if state["stage"] not in {"verification", "handover_launch"}:
+        issues.append("release requires final verification or handover stage")
+    if state["result_status"] not in {"ready_for_release", "released", "externally_accepted"}:
+        issues.append("result is not marked ready for release")
     requirements = {
         item["id"]: item
         for item in state["requirements"]["active"]
         if item.get("required", True)
     }
+    if not requirements:
+        issues.append("release requires at least one active required requirement")
     covered: set[str] = set()
     for check in state["checks"]["current"]:
         if check.get("status") == "passed":
@@ -657,6 +677,17 @@ def apply_candidate(
         if issues:
             raise ValidationError(issues)
         harness_dir = _harness_dir(root)
+        history_dir = harness_dir / "history"
+        if history_dir.is_symlink():
+            raise HarnessError(".harness/history must not be a symlink")
+        history_path = history_dir / f"state-rev-{current_revision:08d}.json"
+        if history_path.is_symlink():
+            raise HarnessError(f"history snapshot must not be a symlink: {history_path}")
+        if history_path.exists():
+            if json.loads(history_path.read_text(encoding="utf-8")) != current:
+                raise ConflictError(f"history snapshot differs from current revision: {history_path}")
+        else:
+            _write_json_atomic(history_path, current)
         _write_json_atomic(harness_dir / "state.json", updated)
         event = _event(
             "state_applied",
