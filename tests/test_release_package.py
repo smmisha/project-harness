@@ -19,6 +19,15 @@ REPORT = ROOT / "release" / f"validation-report-{VERSION}.json"
 
 
 class ReleasePackageTests(unittest.TestCase):
+    def run_helper(self, workspace: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "harness.py"), *arguments, "--root", str(workspace)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+
     def test_manifest_matches_repository_and_archive_bytes(self) -> None:
         manifest = (ROOT / "MANIFEST.sha256").read_bytes()
         entries: dict[str, str] = {}
@@ -73,6 +82,49 @@ class ReleasePackageTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             state = json.loads((workspace / ".harness" / "state.json").read_text(encoding="utf-8"))
             self.assertEqual(state["skill_version"], VERSION)
+
+    def test_new_project_cannot_pass_release_check(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.assertEqual(self.run_helper(root, "init", "--name", "Smoke", "--skill-version", VERSION).returncode, 0)
+            result = self.run_helper(root, "release-check")
+            self.assertEqual(result.returncode, 1)
+            issues = json.loads(result.stderr)["issues"]
+            self.assertTrue(any("stage" in issue for issue in issues))
+            self.assertTrue(any("requirement" in issue for issue in issues))
+
+    def test_apply_keeps_previous_requirement_contents(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.assertEqual(self.run_helper(root, "init", "--name", "Smoke", "--skill-version", VERSION).returncode, 0)
+            state_path = root / ".harness" / "state.json"
+            candidate = root / "candidate.json"
+            first = json.loads(state_path.read_text(encoding="utf-8"))
+            first["requirements"]["active"] = [{"id": "REQ-1", "text": "Original", "required": True}]
+            candidate.write_text(json.dumps(first), encoding="utf-8")
+            result = self.run_helper(root, "apply", "--candidate", str(candidate), "--expected-revision", "0", "--actor", "test")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            second = json.loads(state_path.read_text(encoding="utf-8"))
+            second["requirements"]["active"][0]["text"] = "Revised"
+            candidate.write_text(json.dumps(second), encoding="utf-8")
+            result = self.run_helper(root, "apply", "--candidate", str(candidate), "--expected-revision", "1", "--actor", "test")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            old = json.loads((root / ".harness/history/state-rev-00000001.json").read_text(encoding="utf-8"))
+            self.assertEqual(old["requirements"]["active"][0]["text"], "Original")
+
+    def test_apply_rejects_null_capabilities(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            self.assertEqual(self.run_helper(root, "init", "--name", "Smoke", "--skill-version", VERSION).returncode, 0)
+            state_path = root / ".harness" / "state.json"
+            candidate = root / "candidate.json"
+            invalid = json.loads(state_path.read_text(encoding="utf-8"))
+            invalid["capabilities"] = None
+            candidate.write_text(json.dumps(invalid), encoding="utf-8")
+            result = self.run_helper(root, "apply", "--candidate", str(candidate), "--expected-revision", "0", "--actor", "test")
+            self.assertEqual(result.returncode, 1)
+            self.assertTrue(any("capabilities" in issue for issue in json.loads(result.stderr)["issues"]))
+            self.assertEqual(json.loads(state_path.read_text(encoding="utf-8"))["revision"], 0)
 
 
 if __name__ == "__main__":
