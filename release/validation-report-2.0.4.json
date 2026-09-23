@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "version": "2.0.4",
+  "status": "validated_for_review",
+  "validated_source_commit": "708eb513f6bc3ba2980abfd522ee6847ab1ff4d7",
+  "changes_from_previous": "Fixes two correctness bugs in scripts/harness.py found by an independent code review of the installed 2.0.3 skill (Codex): (1) release_issues() only inspected checks with status 'passed' and ignored the 'required' flag entirely, so a failed required check was invisible to release-check whenever another, non-required check covered the same requirement; a required check that is not 'passed' or 'not_applicable' is now always reported. (2) _check_issues() only enforced the check-v2 schema's required fields when status == 'passed', so a bare {id, status: planned} record passed validation, and an explicit requirement_ids: null crashed with TypeError instead of a validation message; all schema-required fields are now checked for every check record regardless of status, and null-vs-missing is handled without raising. A second-pass review (Codex) found that the first fix used dict.get() for the nullable snapshot_fingerprint and executed_at fields, which conflated an absent key with an explicit null and let a record missing both keys entirely pass with no issues; the check now requires both keys to be present (value may still be null). Both bugs, and this follow-up gap, were reproduced before each fix and confirmed fixed afterward. No other source file changed.",
+  "package": {
+    "path": "release/project-harness-2.0.4.zip",
+    "sha256": "16a5e1b0212ac7e27ff6e33cabf56279aa386a925a876432b4437901023bc59f",
+    "size_bytes": 30095,
+    "entries": 19,
+    "manifest_sha256": "50a953dfcf2ce7da391414ca5e2a0ce2a08b3e722283a0a8f18c8bae8f3f6d13"
+  },
+  "deterministic_tests": {
+    "development_suite": {
+      "command": "python -m unittest discover -s tests -q",
+      "windows_11": {
+        "tests_run": 92,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "new_tests": [
+        "test_checks.CheckTests.test_failed_required_check_blocks_release_despite_other_passed_check",
+        "test_state_schema.StateValidationTests.test_bare_planned_check_is_rejected",
+        "test_state_schema.StateValidationTests.test_missing_nullable_fields_are_rejected_but_explicit_null_is_accepted",
+        "test_state_schema.StateValidationTests.test_null_requirement_ids_is_a_validation_issue_not_a_crash"
+      ],
+      "availability": "The development suite and historical fixtures are not included in the public source snapshot."
+    },
+    "public_package_suite": {
+      "source": "tests/test_release_package.py",
+      "command": "python -m unittest discover -s tests -v",
+      "tests_run": 6,
+      "scope": "Package integrity, report identity, packaged helper smoke, and three reproduced helper regressions."
+    }
+  },
+  "behavioral_evidence": "No model-behavior evaluation for 2.0.4; this release changes helper script logic only, not SKILL.md discovery text.",
+  "unverified": [
+    "Native Linux",
+    "macOS",
+    "Full Claude Code sessions",
+    "Codex and local models running the helper"
+  ]
+}

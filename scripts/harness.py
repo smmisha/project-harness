@@ -157,6 +157,9 @@ def _ids(items: object, label: str, prefix: str, issues: list[str]) -> set[str]:
     return result
 
 
+CHECK_LIST_FIELDS = ("requirement_ids", "task_ids", "input_paths", "evidence_refs", "invalidated_by")
+
+
 def _check_issues(check: dict[str, Any], known_requirements: set[str], known_tasks: set[str]) -> list[str]:
     issues: list[str] = []
     check_id = check.get("id", "<missing-check-id>")
@@ -165,19 +168,41 @@ def _check_issues(check: dict[str, Any], known_requirements: set[str], known_tas
     status = check.get("status")
     if status not in CHECK_STATUSES:
         issues.append(f"unsupported check status for {check_id}: {status}")
-    for requirement_id in check.get("requirement_ids", []):
+    if not isinstance(check.get("required"), bool):
+        issues.append(f"{check_id} requires a boolean 'required' field")
+    if not isinstance(check.get("subject"), str) or not check.get("subject"):
+        issues.append(f"{check_id} requires a non-empty 'subject' field")
+    if not isinstance(check.get("method"), str):
+        issues.append(f"{check_id} requires a string 'method' field")
+    if not isinstance(check.get("environment"), dict):
+        issues.append(f"{check_id} requires an 'environment' object")
+    for field in CHECK_LIST_FIELDS:
+        if not isinstance(check.get(field), list):
+            issues.append(f"{check_id} requires a list '{field}' field")
+    if "snapshot_fingerprint" not in check:
+        issues.append(f"{check_id} is missing 'snapshot_fingerprint' (use null if not yet known)")
+    fingerprint = check.get("snapshot_fingerprint")
+    if fingerprint is not None and not (
+        isinstance(fingerprint, str) and re.fullmatch(r"[0-9a-f]{64}", fingerprint)
+    ):
+        issues.append(f"{check_id} snapshot_fingerprint must be null or a 64-character hex string")
+    if "executed_at" not in check:
+        issues.append(f"{check_id} is missing 'executed_at' (use null if not yet known)")
+    executed_at = check.get("executed_at")
+    if executed_at is not None and not _is_datetime(executed_at):
+        issues.append(f"{check_id} executed_at must be null or a timezone-aware timestamp")
+    for requirement_id in check.get("requirement_ids") or []:
         if requirement_id not in known_requirements:
             issues.append(f"{check_id} references unknown requirement: {requirement_id}")
-    for task_id in check.get("task_ids", []):
+    for task_id in check.get("task_ids") or []:
         if task_id not in known_tasks:
             issues.append(f"{check_id} references unknown task: {task_id}")
     if status == "passed":
-        fingerprint = check.get("snapshot_fingerprint")
         if not isinstance(fingerprint, str) or not re.fullmatch(r"[0-9a-f]{64}", fingerprint):
             issues.append(f"passed check {check_id} requires a current fingerprint")
         if not check.get("method"):
             issues.append(f"passed check {check_id} requires a method")
-        if not _is_datetime(check.get("executed_at")):
+        if not _is_datetime(executed_at):
             issues.append(f"passed check {check_id} requires timezone-aware executed_at")
         if not check.get("evidence_refs"):
             issues.append(f"passed check {check_id} requires evidence")
@@ -416,6 +441,10 @@ def release_issues(state: dict[str, Any], root: Path | None = None) -> list[str]
         issues.append("release requires at least one active required requirement")
     covered: set[str] = set()
     for check in state["checks"]["current"]:
+        if check.get("required") and check.get("status") not in {"passed", "not_applicable"}:
+            issues.append(
+                f"required check is not passed: {check.get('id')} ({check.get('status')})"
+            )
         if check.get("status") == "passed":
             if root is not None:
                 try:
