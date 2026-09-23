@@ -14,7 +14,7 @@ Create the requested result. Act as an orchestrator only when delegation is usef
 3. Inspect the host's real file, execution, network, visual, connector, and agent capabilities. Never fabricate a tool run, approval, agent, delivery, or background process. Read [host guidance](references/hosts.md) when mapping an action to the current host.
 4. Choose the smallest adequate process depth:
    - Use `compact` when the task is bounded, low-risk, readily recoverable from its artifacts, and has no uncertain external effect. Keep a brief working record in context; do not create project bureaucracy.
-   - Use `managed` when work spans sessions, has multiple dependent artifacts, uses delegation, handles valuable mutable data, has elevated consequences, needs traceability, or includes an external operation whose outcome may be unknown. Read [state and recovery](references/state-recovery.md).
+   - Use `managed` when work spans sessions, has multiple dependent artifacts, needs durable coordination or decision history across executors, handles valuable mutable data, has elevated consequences, needs traceability, or includes an external operation whose outcome may be unknown. A short independent delegation alone does not require managed state. Read [state and recovery](references/state-recovery.md).
 5. Enter the lifecycle at the actual stage. Preserve valid existing work. Then perform authorized work instead of stopping at advice or a plan.
 
 Move from `compact` to `managed` when a trigger appears. The transition records confirmed facts and open work; it does not restart the project. Model name alone does not select depth.

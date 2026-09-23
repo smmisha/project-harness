@@ -22,7 +22,7 @@ Advance when active requirements are testable and no unresolved contradiction bl
 
 ### 3. Design / architecture
 
-Define structure, interfaces, data ownership, dependencies, failure behavior, operational boundaries, and significant tradeoffs. Test a consequential assumption before building around it. Keep reversible implementation choices with the executor; take material product or visual choices to the user.
+Define structure, interfaces, data ownership, dependencies, failure behavior, operational boundaries, and significant tradeoffs. Test a consequential assumption before building around it. Keep reversible implementation choices with the executor; take unresolved material product or visual choices to the user. A direction already set by the user or an applicable design system does not need renewed agreement.
 
 Advance when a feasible path exists and critical unknowns are resolved or isolated.
 
@@ -62,4 +62,10 @@ Do not rewrite historical requirements to resemble the implementation.
 
 ## Visual work
 
-When appearance affects meaning, use, or acceptance, show an appropriate preview before expensive implementation. Label a concept image, static mockup, interactive prototype, and running result accurately. Obtain agreement on a material direction, then verify the real artifact across applicable sizes, text lengths, languages, and states.
+When appearance affects meaning, use, or acceptance, show an appropriate preview before expensive implementation if a material direction is still open. Label a concept image, static mockup, interactive prototype, and running result accurately. Obtain agreement only on unresolved material choices; use a direction already supplied by the user or an applicable design system. Then verify the real artifact across applicable sizes, text lengths, languages, and states.
+
+## Scaling examples
+
+- A small bug with a short, independent agent review remains `compact` when the fix and checks are recoverable from the files and conversation. Delegation alone does not justify project records.
+- A project spanning sessions with dependent deliverables and separate owners uses `managed`: record active requirements, decisions, task ownership, evidence, and the next action so another session can resume without guessing.
+- A publication with an uncertain external outcome uses `managed` even if the artifact is small. Record the intended effect and inspect the destination before retrying; a prepared upload is not proof of publication.
