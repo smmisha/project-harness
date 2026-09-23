@@ -158,15 +158,29 @@ def _ids(items: object, label: str, prefix: str, issues: list[str]) -> set[str]:
 
 
 CHECK_LIST_FIELDS = ("requirement_ids", "task_ids", "input_paths", "evidence_refs", "invalidated_by")
+CHECK_ID_PATTERN_FIELDS = {
+    "requirement_ids": r"REQ-[A-Za-z0-9._-]+",
+    "task_ids": r"TASK-[A-Za-z0-9._-]+",
+}
+CHECK_ALLOWED_FIELDS = {
+    "id", "status", "required", "requirement_ids", "task_ids", "method", "subject",
+    "input_paths", "snapshot_fingerprint", "environment", "executed_at", "evidence_refs",
+    "invalidated_by", "extensions",
+}
 
 
 def _check_issues(check: dict[str, Any], known_requirements: set[str], known_tasks: set[str]) -> list[str]:
     issues: list[str] = []
     check_id = check.get("id", "<missing-check-id>")
-    if not isinstance(check_id, str) or not check_id.startswith(CHECK_PREFIX):
-        issues.append(f"check ID must start with {CHECK_PREFIX}: {check_id}")
+    if not isinstance(check_id, str) or not re.fullmatch(rf"{CHECK_PREFIX}[A-Za-z0-9._-]+", check_id):
+        issues.append(f"check ID must match {CHECK_PREFIX}[A-Za-z0-9._-]+: {check_id}")
+    unexpected = sorted(set(check) - CHECK_ALLOWED_FIELDS)
+    if unexpected:
+        issues.append(f"{check_id} has unexpected fields: {', '.join(unexpected)}")
+    if "extensions" in check and not isinstance(check["extensions"], dict):
+        issues.append(f"{check_id} extensions must be an object")
     status = check.get("status")
-    if status not in CHECK_STATUSES:
+    if not isinstance(status, str) or status not in CHECK_STATUSES:
         issues.append(f"unsupported check status for {check_id}: {status}")
     if not isinstance(check.get("required"), bool):
         issues.append(f"{check_id} requires a boolean 'required' field")
@@ -174,11 +188,30 @@ def _check_issues(check: dict[str, Any], known_requirements: set[str], known_tas
         issues.append(f"{check_id} requires a non-empty 'subject' field")
     if not isinstance(check.get("method"), str):
         issues.append(f"{check_id} requires a string 'method' field")
-    if not isinstance(check.get("environment"), dict):
+    environment = check.get("environment")
+    if not isinstance(environment, dict):
         issues.append(f"{check_id} requires an 'environment' object")
+    elif any(
+        not isinstance(key, str) or not (value is None or isinstance(value, (str, int, float, bool)))
+        for key, value in environment.items()
+    ):
+        issues.append(f"{check_id} environment values must be a string, number, boolean, or null")
     for field in CHECK_LIST_FIELDS:
-        if not isinstance(check.get(field), list):
+        value = check.get(field)
+        if not isinstance(value, list):
             issues.append(f"{check_id} requires a list '{field}' field")
+            continue
+        pattern = CHECK_ID_PATTERN_FIELDS.get(field)
+        if pattern is not None:
+            bad_items = [item for item in value if not isinstance(item, str) or not re.fullmatch(pattern, item)]
+            if bad_items:
+                issues.append(f"{check_id} {field} items must match {pattern}")
+        else:
+            bad_items = [item for item in value if not isinstance(item, str) or not item]
+            if bad_items:
+                issues.append(f"{check_id} {field} items must be non-empty strings")
+        if not bad_items and len(value) != len(set(value)):
+            issues.append(f"{check_id} {field} must not contain duplicate items")
     if "snapshot_fingerprint" not in check:
         issues.append(f"{check_id} is missing 'snapshot_fingerprint' (use null if not yet known)")
     fingerprint = check.get("snapshot_fingerprint")
@@ -191,12 +224,18 @@ def _check_issues(check: dict[str, Any], known_requirements: set[str], known_tas
     executed_at = check.get("executed_at")
     if executed_at is not None and not _is_datetime(executed_at):
         issues.append(f"{check_id} executed_at must be null or a timezone-aware timestamp")
-    for requirement_id in check.get("requirement_ids") or []:
-        if requirement_id not in known_requirements:
-            issues.append(f"{check_id} references unknown requirement: {requirement_id}")
-    for task_id in check.get("task_ids") or []:
-        if task_id not in known_tasks:
-            issues.append(f"{check_id} references unknown task: {task_id}")
+    for field, known_ids, label in (
+        ("requirement_ids", known_requirements, "requirement"),
+        ("task_ids", known_tasks, "task"),
+    ):
+        references = check.get(field)
+        if not isinstance(references, list):
+            continue
+        for reference in references:
+            if not isinstance(reference, str) or not re.fullmatch(CHECK_ID_PATTERN_FIELDS[field], reference):
+                continue
+            if reference not in known_ids:
+                issues.append(f"{check_id} references unknown {label}: {reference}")
     if status == "passed":
         if not isinstance(fingerprint, str) or not re.fullmatch(r"[0-9a-f]{64}", fingerprint):
             issues.append(f"passed check {check_id} requires a current fingerprint")
@@ -221,23 +260,28 @@ def validate_state(state: object) -> list[str]:
     }
     missing = sorted(required.difference(state))
     issues.extend(f"missing top-level field: {field}" for field in missing)
+    unexpected = sorted(set(state).difference(required | {"extensions", "legacy"}))
+    issues.extend(f"unexpected top-level field: {field}" for field in unexpected)
+    for optional_field in ("extensions", "legacy"):
+        if optional_field in state and not isinstance(state[optional_field], dict):
+            issues.append(f"{optional_field} must be an object")
     if missing:
         return issues
     if state.get("schema_version") != SCHEMA_VERSION:
         issues.append(f"unsupported schema_version: {state.get('schema_version')}")
     if not isinstance(state.get("skill_version"), str) or not state["skill_version"]:
         issues.append("skill_version must be a non-empty string")
-    if not isinstance(state.get("project_id"), str) or not state["project_id"].startswith("PROJECT-"):
-        issues.append("project_id must start with PROJECT-")
+    if not isinstance(state.get("project_id"), str) or not re.fullmatch(r"PROJECT-[A-Za-z0-9._-]+", state["project_id"]):
+        issues.append("project_id must match PROJECT-[A-Za-z0-9._-]+")
     if type(state.get("revision")) is not int or state["revision"] < 0:
         issues.append("revision must be a non-negative integer")
     if not _is_datetime(state.get("updated_at")):
         issues.append("updated_at must be timezone-aware ISO 8601")
-    if state.get("depth") not in {"compact", "managed"}:
+    if not isinstance(state.get("depth"), str) or state["depth"] not in {"compact", "managed"}:
         issues.append(f"unsupported depth: {state.get('depth')}")
-    if state.get("stage") not in STAGES:
+    if not isinstance(state.get("stage"), str) or state["stage"] not in STAGES:
         issues.append(f"unsupported stage: {state.get('stage')}")
-    if state.get("result_status") not in RESULT_STATUSES:
+    if not isinstance(state.get("result_status"), str) or state["result_status"] not in RESULT_STATUSES:
         issues.append(f"unsupported result_status: {state.get('result_status')}")
     capabilities = state.get("capabilities")
     if not isinstance(capabilities, dict) or any(
@@ -263,6 +307,8 @@ def validate_state(state: object) -> list[str]:
         collection_ids[name] = ids
 
     checks_container = state.get("checks")
+    if isinstance(checks_container, dict) and set(checks_container).difference({"current"}):
+        issues.append("checks must contain only current")
     checks = checks_container.get("current") if isinstance(checks_container, dict) else None
     check_ids = _ids(checks, "checks.current", CHECK_PREFIX, issues)
     if isinstance(checks, list):
@@ -273,6 +319,8 @@ def validate_state(state: object) -> list[str]:
                 )
 
     operations_container = state.get("operations")
+    if isinstance(operations_container, dict) and set(operations_container).difference({"open"}):
+        issues.append("operations must contain only open")
     operations = operations_container.get("open") if isinstance(operations_container, dict) else None
     operation_ids = _ids(operations, "operations.open", OPERATION_PREFIX, issues)
     if isinstance(operations, list):
@@ -281,12 +329,14 @@ def validate_state(state: object) -> list[str]:
                 continue
             operation_id = operation.get("id", "<missing-operation-id>")
             status = operation.get("status")
-            if status not in OPERATION_STATUSES:
+            if not isinstance(status, str) or status not in OPERATION_STATUSES:
                 issues.append(f"unsupported operation status for {operation_id}: {status}")
             if status == "unknown" and not operation.get("intended_effect_id"):
                 issues.append(f"unknown operation {operation_id} requires intended_effect_id")
             task_id = operation.get("task_id")
-            if task_id is not None and task_id not in collection_ids.get("tasks", set()):
+            if task_id is not None and (
+                not isinstance(task_id, str) or task_id not in collection_ids.get("tasks", set())
+            ):
                 issues.append(f"{operation_id} references unknown task: {task_id}")
 
     duplicates = active_ids.intersection(check_ids | operation_ids) | check_ids.intersection(operation_ids)
@@ -505,7 +555,7 @@ def upsert_operation(state: dict[str, Any], operation: dict[str, Any]) -> dict[s
     if not isinstance(operation_id, str) or not operation_id.startswith(OPERATION_PREFIX):
         raise ValidationError([f"operation ID must start with {OPERATION_PREFIX}"])
     status = operation.get("status")
-    if status not in OPERATION_STATUSES:
+    if not isinstance(status, str) or status not in OPERATION_STATUSES:
         raise ValidationError([f"unsupported operation status for {operation_id}: {status}"])
     intended_effect_id = operation.get("intended_effect_id")
     if status == "unknown" and not intended_effect_id:

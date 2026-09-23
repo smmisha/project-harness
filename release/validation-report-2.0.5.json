@@ -1,0 +1,63 @@
+{
+  "schema_version": "1.0",
+  "version": "2.0.5",
+  "status": "validated_for_review",
+  "validated_source_commit": "40d5ae5346f74bb28522730157bdeb6388ab72ac",
+  "development_source_commit": "bf7eede5fab46209bf0632be4f117055364f45cc",
+  "changes_from_previous": "Brings validate_state() and _check_issues() into full compliance with schemas/state-v2.schema.json and schemas/check-v2.schema.json. A systematic field-by-field audit of both schemas against the Python validators found 12 places where an input the schema declares invalid was silently accepted: (1) project_id only checked the PROJECT- prefix, not the full ^PROJECT-[A-Za-z0-9._-]+$ pattern; (2) the state object accepted arbitrary unexpected top-level fields despite additionalProperties: false; (3) the checks container accepted extra keys beyond 'current'; (4) the operations container accepted extra keys beyond 'open'; (5) the optional state-level 'extensions' and 'legacy' fields were never type-checked; (6) a check's id only checked the CHK- prefix, not the full pattern; (7) requirement_ids/task_ids items were not checked against their REQ-/TASK- patterns; (8) requirement_ids/task_ids/input_paths/evidence_refs/invalidated_by allowed duplicate items despite uniqueItems; (9) input_paths/evidence_refs/invalidated_by allowed empty-string items despite minLength 1; (10) environment accepted non-scalar values despite the schema restricting values to string/number/boolean/null; (11) a check-level 'extensions' of the wrong type was accepted; (12) a check accepted arbitrary unexpected fields despite additionalProperties: false. A second-pass review (Codex) also found that wrongly-typed values such as a list or object in 'stage', 'depth', 'result_status', a check or operation 'status', an operation 'task_id', or a requirement_ids/task_ids item crashed the validator with TypeError (unhashable type used in a set membership test) instead of producing a validation issue; all of these now report an issue, and requirement/task membership is only checked for items that already match their ID pattern. Each gap was reproduced against the pre-fix code and confirmed fixed afterward. 20 new regression tests cover these cases, including a CLI test that invalid writes return JSON and leave state and history unchanged. No SKILL.md change.",
+  "package": {
+    "path": "release/project-harness-2.0.5.zip",
+    "sha256": "3507f926fca395f893c18deea3d7cd0e82148f1a4fe606482b092d7d6096aba1",
+    "size_bytes": 30715,
+    "entries": 19,
+    "manifest_sha256": "7c4346873fd13b957b2ba33c180eec18e11f892655fa5547b813f84e50473c80",
+    "reproducible_rebuild": "Two independent builds with tools/package_skill.py from development commit bf7eede produced identical archive bytes, and the built manifest matched the committed one byte for byte."
+  },
+  "deterministic_tests": {
+    "development_suite": {
+      "command": "python -m unittest discover -s tests -q",
+      "windows_11": {
+        "tests_run": 112,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "new_tests": [
+        "test_state_schema.StateValidationTests.test_project_id_must_match_schema_pattern",
+        "test_state_schema.StateValidationTests.test_unexpected_top_level_field_is_rejected",
+        "test_state_schema.StateValidationTests.test_checks_container_rejects_extra_keys",
+        "test_state_schema.StateValidationTests.test_operations_container_rejects_extra_keys",
+        "test_state_schema.StateValidationTests.test_extensions_and_legacy_must_be_objects_when_present",
+        "test_state_schema.StateValidationTests.test_state_enum_fields_reject_wrong_types_without_crashing",
+        "test_state_schema.StateValidationTests.test_operation_status_rejects_wrong_types_without_crashing",
+        "test_state_schema.StateValidationTests.test_operation_task_reference_rejects_wrong_types_without_crashing",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_check_id_must_match_schema_pattern",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_requirement_and_task_id_items_must_match_pattern",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_id_list_fields_reject_duplicate_items",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_nonempty_string_list_items_are_enforced",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_environment_values_must_be_json_scalars",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_extensions_must_be_an_object_when_present",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_unexpected_check_field_is_rejected",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_status_rejects_wrong_types_without_crashing",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_reference_lists_reject_wrong_types_without_crashing",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_reference_items_reject_wrong_types_without_crashing",
+        "test_state_schema.CheckIssuesSchemaConformanceTests.test_valid_reference_items_still_check_requirement_and_task_membership",
+        "test_state_schema.InvalidRecordCliTests.test_invalid_writes_return_json_and_preserve_state_and_history"
+      ],
+      "availability": "The development suite and historical fixtures are not included in the public source snapshot."
+    },
+    "public_package_suite": {
+      "source": "tests/test_release_package.py",
+      "command": "python -m unittest discover -s tests -v",
+      "tests_run": 6,
+      "scope": "Package integrity, report identity, packaged helper smoke, and three reproduced helper regressions."
+    }
+  },
+  "behavioral_evidence": "No model-behavior evaluation for 2.0.5; this release only tightens the optional helper's own state/check validation to match its own published JSON schemas. SKILL.md is unchanged.",
+  "unverified": [
+    "Native Linux",
+    "macOS",
+    "Full Claude Code sessions",
+    "Codex and local models running the helper"
+  ]
+}
