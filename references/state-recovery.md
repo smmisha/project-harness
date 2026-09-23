@@ -1,6 +1,6 @@
 # Managed state and recovery
 
-Read this reference for multi-session work, multiple executors, durable traceability, or an unfinished operation. Short safe work remains `compact` and does not need `.harness/`.
+Read this reference for multi-session work, durable coordination across executors, traceability, or an unfinished operation. Short safe work, including a bounded independent delegation, remains `compact` when its artifacts suffice for recovery and no other managed trigger applies; it does not need `.harness/`.
 
 ## Project-local records
 

@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "version": "2.0.1",
+  "status": "validated_for_review",
+  "validated_source_commit": "c3d50d1",
+  "package": {
+    "path": "release/project-harness-2.0.1.zip",
+    "sha256": "b3b3c8cc5d909ea67c47e81e679f08d9894c3301912a89d331243a74bfff3e20",
+    "size_bytes": 28980,
+    "entries": 19,
+    "manifest_sha256": "f3d1ab36b6867cfe07508713a5a93e8b2d7f4df5334b854925b7ac8dbaf2c766"
+  },
+  "deterministic_tests": {
+    "development_suite": {
+      "command": "python -m unittest discover -s tests -q",
+      "windows_11": {"tests_run": 83, "failures": 0, "errors": 0, "skipped": 1},
+      "ubuntu_wsl2": {"tests_run": 83, "failures": 0, "errors": 0, "skipped": 0},
+      "ubuntu_evidence": "release/ubuntu-validation-2.0.1.json",
+      "ubuntu_evidence_sha256": "d977f3edd7933caa4b4680a04ff1725f795e9bac07c689ade72770292b6de0c0",
+      "availability": "The 83-test development suite and its historical fixtures are not included in the installable package or public source snapshot."
+    },
+    "public_package_suite": {
+      "source": "tests/test_release_package.py",
+      "command": "python -m unittest discover -s tests -v",
+      "tests_run": 3,
+      "scope": "Manifest and archive integrity, report-to-archive identity, and packaged helper init/status/validate smoke test."
+    }
+  },
+  "behavioral_evidence": "The wording update has no new model-behavior evaluation. Earlier beta-snapshot paired results did not establish a benefit over baseline; automatic discovery remained unreliable.",
+  "unverified": ["Native Linux", "macOS", "Full Claude Code 2.0.1 behavior", "Other Agent Skills hosts"]
+}
