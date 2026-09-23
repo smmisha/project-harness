@@ -9,4 +9,4 @@
 | Codex and local models | No 2.0.3 run | Unverified |
 | Other Agent Skills hosts | No host-specific run | Unverified |
 
-2.0.3 changes only the `description` frontmatter in `SKILL.md` and `VERSION`; all other packaged files are byte-identical to 2.0.2. The [validation report](validation-report-2.0.3.json) identifies the exact archive and test evidence.
+2.0.3 changes only the `description` frontmatter in `SKILL.md` and `VERSION`, with `MANIFEST.sha256` regenerated for them; the other 16 packaged files are byte-identical to 2.0.2. The [validation report](validation-report-2.0.3.json) identifies the exact archive and test evidence.

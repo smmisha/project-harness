@@ -4,7 +4,7 @@
   "status": "validated_for_review",
   "validated_source_commit": "0dd4cf3",
   "validated_source_working_tree_changes": ["SKILL.md", "VERSION", "MANIFEST.sha256"],
-  "changes_from_previous": "Rewrote the SKILL.md description as trigger-oriented text with example user phrasings in English and Russian. No other packaged file changed.",
+  "changes_from_previous": "Rewrote the SKILL.md description as trigger-oriented text with example user phrasings in English and Russian, bumped VERSION, and regenerated MANIFEST.sha256. The other 16 packaged files are byte-identical to 2.0.2.",
   "package": {
     "path": "release/project-harness-2.0.3.zip",
     "sha256": "291fbd6e5b60c39e2766c7533342a2ee6a2e07da3014963188ff330ce0f17a76",
