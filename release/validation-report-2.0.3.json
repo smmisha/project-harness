@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "version": "2.0.3",
+  "status": "validated_for_review",
+  "validated_source_commit": "0dd4cf3",
+  "validated_source_working_tree_changes": ["SKILL.md", "VERSION", "MANIFEST.sha256"],
+  "changes_from_previous": "Rewrote the SKILL.md description as trigger-oriented text with example user phrasings in English and Russian. No other packaged file changed.",
+  "package": {
+    "path": "release/project-harness-2.0.3.zip",
+    "sha256": "291fbd6e5b60c39e2766c7533342a2ee6a2e07da3014963188ff330ce0f17a76",
+    "size_bytes": 29781,
+    "entries": 19,
+    "manifest_sha256": "08c6f0dc7a34edaf3b913042fd2a67d8422e19d57f6980f3b904777417013824",
+    "reproducible_rebuild": "Two independent builds with tools/package_skill.py produced identical archive bytes."
+  },
+  "deterministic_tests": {
+    "development_suite": {
+      "command": "python -m unittest discover -s tests -q",
+      "windows_11": {
+        "tests_run": 88,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1
+      },
+      "ubuntu_wsl2": {
+        "tests_run": 88,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "ubuntu_evidence": "release/ubuntu-validation-2.0.3.json",
+      "ubuntu_evidence_sha256": "3626510e3c90cc0d88db7998c8c5d207ad0ef4482548ae4d4a0299c1362b22dd",
+      "availability": "The 88-test development suite and historical fixtures are not included in the public source snapshot."
+    },
+    "public_package_suite": {
+      "source": "tests/test_release_package.py",
+      "command": "python -m unittest discover -s tests -v",
+      "tests_run": 6,
+      "scope": "Package integrity, report identity, packaged helper smoke, and three reproduced helper regressions."
+    }
+  },
+  "behavioral_evidence": "Natural-prompt discovery in Claude Code desktop with Claude Opus 5.5 subagents: with the 2.0.2 description 0 of 1 project prompts invoked the Skill; with the 2.0.3 description 3 of 3 project prompts invoked it and 0 of 1 simple questions did. Invocations were confirmed in subagent transcripts. Single runs, one model; not a reliability claim.",
+  "unverified": [
+    "Native Linux",
+    "macOS",
+    "Full Claude Code sessions outside subagents",
+    "Codex and local models",
+    "Other Agent Skills hosts"
+  ]
+}

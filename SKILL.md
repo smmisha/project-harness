@@ -1,6 +1,6 @@
 ---
 name: project-harness
-description: Execute, continue, recover, verify, and hand over multi-step projects that require a finished artifact, preserved requirements, or durable state. Use for project-level work across software and non-code deliverables; skip isolated questions and simple one-step edits unless explicitly requested.
+description: 'Use when the user asks to build, finish, continue, or fix a small project end to end: an app, CLI tool, script with tests, website, bot, game, report, or document set. Triggers include "make a project", "build a tool with tests", "bring it to a working/verified result", "continue the project", "сделай проект", "доведи до результата", "продолжи проект", "проверь и сдай". Covers requirements, planning, implementation, running tests, verification, handover, and resuming interrupted work. Skip single questions and one-line edits.'
 ---
 
 # Project Harness
